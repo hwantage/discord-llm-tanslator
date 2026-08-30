@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Discord 한줄 번역 설정</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="intro">
+        <div class="mark" aria-hidden="true">
+          <img src="../icons/icon-128.png" alt="">
+        </div>
+        <div>
+          <p class="eyebrow">Discord inline translator</p>
+          <h1>메시지 끝에서 바로 번역</h1>
+          <p class="lede">원문은 그대로 두고, 원하는 OpenAI 호환 LLM이 만든 한국어 번역을 바로 아래에 붙입니다.</p>
+          <span class="local-badge">OPENAI-COMPATIBLE · LOCAL OR CLOUD</span>
+        </div>
+      </header>
+
+      <form id="settings-form" class="settings-card">
+        <section class="setting-row">
+          <label class="setting-title" for="endpoint">API Base URL</label>
+          <p class="setting-help">OpenAI 호환 <code>chat/completions</code> API의 Base URL을 입력하세요.</p>
+          <input
+            id="endpoint"
+            name="endpoint"
+            type="url"
+            inputmode="url"
+            spellcheck="false"
+            autocomplete="url"
+            placeholder="http://localhost:11434/v1"
+            required
+          >
+          <p class="field-note">예: Ollama <code>http://localhost:11434/v1</code> · OpenAI <code>https://api.openai.com/v1</code>. 원격 주소는 저장할 때 해당 호스트 권한을 요청합니다.</p>
+        </section>
+
+        <section class="setting-row">
+          <label class="setting-title" for="model">번역 모델</label>
+          <p class="setting-help">연결할 제공자가 인식하는 모델 ID를 정확히 입력하세요.</p>
+          <input
+            id="model"
+            name="model"
+            type="text"
+            spellcheck="false"
+            autocomplete="off"
+            placeholder="0xIbra/supergemma4-26b-uncensored-gguf-v2:Q4_K_M"
+            required
+          >
+        </section>
+
+        <section class="setting-row">
+          <label class="setting-title" for="api-key">API 키 <span class="optional">선택</span></label>
+          <p class="setting-help">인증이 필요한 제공자만 입력하세요. 값이 없으면 인증 헤더 없이 요청합니다.</p>
+          <input
+            id="api-key"
+            name="apiKey"
+            type="password"
+            spellcheck="false"
+            autocomplete="off"
+            placeholder="sk-… 또는 제공자 API 키"
+          >
+          <p class="field-note">키는 브라우저의 확장 전용 로컬 저장소에 보관됩니다. 원격 서버에 키를 보낼 때는 HTTPS만 허용합니다.</p>
+        </section>
+
+        <section class="target-row" aria-label="번역 언어">
+          <span>번역 언어</span>
+          <strong>한국어 · KO</strong>
+        </section>
+
+        <div class="actions">
+          <button id="save-button" class="primary" type="submit">설정 저장</button>
+          <button id="test-button" class="secondary" type="button">연결 테스트</button>
+        </div>
+
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </form>
+
+      <aside class="privacy-note">
+        <span class="privacy-label">전송 범위</span>
+        <p><strong>클릭한 메시지 본문만</strong> 설정한 LLM 엔드포인트로 전송합니다. Discord 토큰, 사용자 ID, 채널 ID는 전송하지 않습니다.</p>
+      </aside>
+    </main>
+
+    <script src="../shared.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

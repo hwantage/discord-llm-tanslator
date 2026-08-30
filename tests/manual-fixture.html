@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Discord translator fixture</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --text-normal: #dbdee1;
+        --text-muted: #949ba4;
+        --status-danger: #f23f42;
+        font-family: "gg sans", Inter, system-ui, sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; color: #dbdee1; background: #1e1f22; }
+      .server { display: grid; grid-template-columns: 72px 240px 1fr; min-height: 100vh; }
+      .rail { background: #111214; }
+      .channels { padding: 30px 18px; color: #949ba4; background: #2b2d31; }
+      .channels strong { display: block; margin-bottom: 22px; color: #f2f3f5; }
+      .channel { margin: 12px 0; }
+      .chat { padding: 64px 40px; background: #313338; }
+      .chat h1 { margin: 0 0 34px; font-size: 24px; }
+      .message { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 14px; margin: 24px 0; }
+      .avatar { width: 42px; height: 42px; border-radius: 50%; background: #5865f2; }
+      .meta { margin-bottom: 5px; }
+      .name { color: #f2f3f5; font-weight: 700; }
+      time { margin-left: 7px; color: #949ba4; font-size: 11px; }
+      [id^="message-content-"] { max-width: 720px; color: #dbdee1; font-size: 16px; line-height: 1.375; }
+      a { color: #00a8fc; }
+    </style>
+    <script>
+      globalThis.chrome = {
+        runtime: {
+          id: "fixture",
+          openOptionsPage() {},
+          async sendMessage() {
+            await new Promise((resolve) => setTimeout(resolve, 250));
+            return {
+              ok: true,
+              result: { translatedText: "새 번역 버튼을 시험하고 있어요. __DTX_0__" }
+            };
+          }
+        },
+        storage: {
+          local: {
+            async get() { return { uiSettings: { enabled: true } }; }
+          },
+          onChanged: { addListener() {} }
+        }
+      };
+    </script>
+  </head>
+  <body>
+    <div class="server">
+      <aside class="rail"></aside>
+      <aside class="channels">
+        <strong>Translator Lab</strong>
+        <div class="channel"># general</div>
+        <div class="channel"># localization</div>
+      </aside>
+      <main class="chat">
+        <h1># general</h1>
+        <ol>
+          <li id="chat-messages-1-100" class="message">
+            <div class="avatar"></div>
+            <div>
+              <div class="meta"><span class="name">Mina</span><time>오늘 오후 8:41</time></div>
+              <div id="message-content-1-100">I’m testing the new translation button. <a href="https://example.com">https://example.com</a></div>
+            </div>
+          </li>
+          <li id="chat-messages-1-101" class="message">
+            <div class="avatar" style="background:#eb459e"></div>
+            <div>
+              <div class="meta"><span class="name">Alex</span><time>오늘 오후 8:42</time></div>
+              <div id="message-content-1-101">Could you leave the original message visible?</div>
+            </div>
+          </li>
+          <div
+            class="message message__fixture hasReply_fixture"
+            data-list-item-id="chat-messages___chat-messages-1-102"
+            aria-labelledby="message-reply-context-1-102 message-content-1-102"
+          >
+            <div id="message-reply-context-1-102" class="repliedMessage_fixture">
+              <div class="repliedTextPreview_fixture">
+                <div id="message-content-1-099" class="repliedTextContent_fixture messageContent_fixture">
+                  Quoted message preview should not receive a button.
+                </div>
+              </div>
+            </div>
+            <div class="contents_fixture">
+              <div id="message-content-1-102" class="messageContent_fixture">
+                The actual reply body should receive the translation button.
+              </div>
+            </div>
+          </div>
+        </ol>
+      </main>
+    </div>
+    <script src="../shared.js"></script>
+    <script src="../content.js"></script>
+    <script>
+      setTimeout(() => {
+        const buttonHost = document.querySelector('[data-discord-translator-ui="button"]');
+        document.body.dataset.buttonMarginLeft = buttonHost?.style.marginLeft || "";
+        document.body.dataset.translationExistsBeforeRequest = String(
+          Boolean(document.querySelector('[data-discord-translator-ui="translation"]'))
+        );
+      }, 60);
+
+      setTimeout(() => {
+        const firstButton = document
+          .querySelector('[data-discord-translator-ui="button"]')
+          ?.shadowRoot?.querySelector("button");
+        firstButton?.click();
+      }, 100);
+
+      setTimeout(() => {
+        document.body.dataset.translationExistsWhileLoading = String(
+          Boolean(document.querySelector('[data-discord-translator-ui="translation"]'))
+        );
+      }, 140);
+
+      setTimeout(() => {
+        const content = document.querySelector("#message-content-1-100");
+        content?.replaceWith(content.cloneNode(true));
+      }, 170);
+
+      setTimeout(() => {
+        document.body.dataset.translatorUiCount = String(
+          document.querySelectorAll("[data-discord-translator-ui]").length
+        );
+        const translationHost = document.querySelector(
+          '[data-discord-translator-ui="translation"][data-state="success"]'
+        );
+        document.body.dataset.translationText =
+          translationHost?.shadowRoot?.querySelector(".body")?.textContent || "";
+        const translationPanel = translationHost?.shadowRoot?.querySelector(".translation");
+        const hostWidth = translationHost?.getBoundingClientRect().width || 0;
+        const panelWidth = translationPanel?.getBoundingClientRect().width || 0;
+        document.body.dataset.translationUsesFullWidth = String(
+          hostWidth > 0 && Math.abs(hostWidth - panelWidth) < 1
+        );
+        document.body.dataset.replyPreviewHasButton = String(
+          Boolean(
+            document
+              .querySelector("#message-content-1-099")
+              ?.querySelector('[data-discord-translator-ui="button"]')
+          )
+        );
+        document.body.dataset.replyBodyHasButton = String(
+          Boolean(
+            document
+              .querySelector("#message-content-1-102")
+              ?.querySelector('[data-discord-translator-ui="button"]')
+          )
+        );
+      }, 700);
+    </script>
+  </body>
+</html>
