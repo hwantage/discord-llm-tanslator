@@ -20,6 +20,9 @@ Chrome 138 이상의 내장 `Translator` API에 의존하지 않습니다. OpenA
 
 확장이 브라우저에서 활성화되어 있으면 Discord에 `[한]` 버튼을 항상 표시합니다. 번역 기능 전체를 중지하려면 브라우저의 확장 관리 화면에서 확장을 비활성화합니다.
 
+<img width="1449" height="777" alt="image" src="https://github.com/user-attachments/assets/859ce478-bfaa-4287-bff2-b2535ef884c2" />
+
+
 ## 지원 환경
 
 | 브라우저 | 빌드 | 비고 |
