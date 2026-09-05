@@ -78,7 +78,9 @@ test("기존 LibreTranslate 설정은 안전한 기본값으로 마이그레이�
 
 test("설정값을 보수적으로 정규화한다", () => {
   assert.deepEqual(Shared.sanitizeUiSettings({ enabled: false, targetLanguage: "ja" }), {
-    targetLanguage: "ko"
+    targetLanguage: "ko",
+    buttonIcon: "hangul",
+    translationTheme: "default"
   });
   assert.deepEqual(
     Shared.sanitizeProviderSettings({
@@ -94,6 +96,18 @@ test("설정값을 보수적으로 정규화한다", () => {
       apiKey: "secret"
     }
   );
+});
+
+test("표시 설정은 지원하는 아이콘과 색상만 저장하고 잘못된 값은 기본값으로 되돌린다", () => {
+  assert.deepEqual(Shared.sanitizeUiSettings({ buttonIcon: "globe", translationTheme: "blue" }), {
+    targetLanguage: "ko", buttonIcon: "globe", translationTheme: "blue"
+  });
+  for (const value of [undefined, null, "mint", {}, { buttonIcon: "<script>", translationTheme: "url(https://example.com)" }]) {
+    assert.deepEqual(Shared.sanitizeUiSettings(value), Shared.DEFAULT_UI_SETTINGS);
+  }
+  assert.deepEqual(Shared.sanitizeUiSettings({ buttonIcon: "bubble", translationTheme: "missing" }), {
+    targetLanguage: "ko", buttonIcon: "bubble", translationTheme: "default"
+  });
 });
 
 test("기존 Ollama 설정은 OpenAI 호환 /v1 엔드포인트로 마이그레이션한다", () => {

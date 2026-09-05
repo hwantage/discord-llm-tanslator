@@ -3,6 +3,7 @@
 
   const extensionApi = globalThis.browser ?? globalThis.chrome;
   const Shared = globalThis.DiscordTranslatorShared;
+  const Ui = globalThis.DiscordTranslatorUi;
   const LOG_PREFIX = "[DiscordTranslator]";
   const form = document.querySelector("#settings-form");
   const endpointInput = document.querySelector("#endpoint");
@@ -12,6 +13,74 @@
   const testButton = document.querySelector("#test-button");
   const status = document.querySelector("#status");
   let traceSequence = 0;
+  const previewButton = Ui.createButtonHost();
+  const previewTranslation = Ui.createTranslationHost();
+  const previewExamples = [
+    "도와줘서 고마워요! 내일 봐요.",
+    "도와주셔서 감사해요! 내일 만나요."
+  ];
+  let previewExampleIndex = 0;
+
+  function createAppearanceChoices(container, name, choices) {
+    for (const choice of choices) {
+      const label = document.createElement("label");
+      label.className = "appearance-choice";
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = name;
+      input.value = choice.id;
+      const sample = document.createElement("span");
+      sample.className = "choice-sample";
+      sample.setAttribute("aria-hidden", "true");
+      if (name === "buttonIcon") {
+        sample.innerHTML = choice.markup;
+      } else {
+        sample.textContent = "가나다";
+        sample.style.color = choice.color;
+        sample.style.backgroundColor = choice.background;
+      }
+      const caption = document.createElement("span");
+      caption.className = "choice-caption";
+      caption.textContent = choice.label;
+      label.append(input, sample, caption);
+      input.addEventListener("change", updatePreview);
+      container.append(label);
+    }
+  }
+
+  function readUiSettings() {
+    return Shared.sanitizeUiSettings({
+      buttonIcon: form.querySelector('input[name="buttonIcon"]:checked')?.value,
+      translationTheme: form.querySelector('input[name="translationTheme"]:checked')?.value
+    });
+  }
+
+  function updatePreview() {
+    const settings = readUiSettings();
+    Ui.applyButtonSettings(previewButton.button, settings);
+    Ui.applyTranslationSettings(previewTranslation.host, settings);
+  }
+
+  function setPreviewVisible(visible) {
+    previewTranslation.panel.hidden = !visible;
+    previewButton.button.setAttribute("aria-pressed", String(visible));
+    previewButton.button.setAttribute("aria-label", visible ? "한국어 번역 숨기기" : "한국어 번역 표시");
+    previewButton.button.title = visible ? "번역 숨기기" : "번역 표시";
+  }
+
+  createAppearanceChoices(document.querySelector("#icon-choices"), "buttonIcon", Shared.BUTTON_ICONS);
+  createAppearanceChoices(document.querySelector("#theme-choices"), "translationTheme", Shared.TRANSLATION_THEMES);
+  document.querySelector("#preview-source").append(previewButton.host);
+  document.querySelector("#preview-translation").append(previewTranslation.host);
+  previewTranslation.panel.dataset.state = "success";
+  previewTranslation.body.textContent = previewExamples[0];
+  previewTranslation.retry.hidden = false;
+  setPreviewVisible(true);
+  previewButton.button.addEventListener("click", () => setPreviewVisible(previewTranslation.panel.hidden));
+  previewTranslation.retry.addEventListener("click", () => {
+    previewExampleIndex = (previewExampleIndex + 1) % previewExamples.length;
+    previewTranslation.body.textContent = previewExamples[previewExampleIndex];
+  });
 
   function createTraceId() {
     traceSequence += 1;
@@ -29,12 +98,17 @@
   }
 
   async function loadSettings() {
-    const stored = await extensionApi.storage.local.get("providerSettings");
+    const stored = await extensionApi.storage.local.get(["providerSettings", "uiSettings"]);
     const providerSettings = Shared.sanitizeProviderSettings(stored.providerSettings);
+    const uiSettings = Shared.sanitizeUiSettings(stored.uiSettings);
 
     endpointInput.value = providerSettings.endpoint;
     modelInput.value = providerSettings.model;
     apiKeyInput.value = providerSettings.apiKey;
+    for (const input of form.querySelectorAll('input[type="radio"]')) {
+      input.checked = input.value === uiSettings[input.name];
+    }
+    updatePreview();
     console.info(`${LOG_PREFIX} options.ready`, {
       version: extensionApi.runtime.getManifest?.().version || "unknown",
       endpoint: providerSettings.endpoint,
@@ -85,7 +159,8 @@
         endpoint,
         model,
         apiKey
-      })
+      }),
+      uiSettings: readUiSettings()
     });
 
     endpointInput.value = endpoint;
@@ -93,7 +168,7 @@
     apiKeyInput.value = apiKey;
 
     if (announce) {
-      showStatus("설정을 저장했습니다. Discord 탭에서 이 LLM으로 번역할 수 있습니다.");
+      showStatus("설정을 저장했습니다. 번역 표시 설정은 열려 있는 Discord 탭에도 적용됩니다.");
     }
 
     console.info(`${LOG_PREFIX} options.settings.saved`, {

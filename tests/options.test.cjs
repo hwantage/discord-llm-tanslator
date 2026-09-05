@@ -21,7 +21,7 @@ test("설정 화면과 매니페스트가 Discord 번역 아이콘을 공유한�
   }
 });
 
-test("설정 화면은 중복된 기능 토글 없이 연결 정보만 다룬다", () => {
+test("설정 화면은 중복된 번역 기능 토글을 표시하지 않는다", () => {
   assert.doesNotMatch(optionsHtml, /id="enabled"|class="switch"/);
 });
 

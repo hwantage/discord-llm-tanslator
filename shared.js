@@ -14,8 +14,25 @@
   const DEFAULT_LLM_MODEL = "0xIbra/supergemma4-26b-uncensored-gguf-v2:Q4_K_M";
 
   const DEFAULT_UI_SETTINGS = Object.freeze({
-    targetLanguage: "ko"
+    targetLanguage: "ko",
+    buttonIcon: "hangul",
+    translationTheme: "default"
   });
+
+  const BUTTON_ICONS = Object.freeze([
+    Object.freeze({ id: "hangul", label: "한글", markup: "한" }),
+    Object.freeze({ id: "translate", label: "가/A", markup: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h12M9 3v2m3 0c-1 6-4 9-9 12m2-9c1 3 4 6 8 8m1 5 4-11 4 11m-6.5-4h5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>' }),
+    Object.freeze({ id: "globe", label: "지구본", markup: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></g></svg>' }),
+    Object.freeze({ id: "bubble", label: "말풍선", markup: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4v13h4v4l5-4h7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7 8h10M7 12h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>' })
+  ]);
+
+  const TRANSLATION_THEMES = Object.freeze([
+    Object.freeze({ id: "default", label: "기본", color: "var(--text-muted, #b5bac1)", background: "transparent", accent: "#54e2d1" }),
+    Object.freeze({ id: "mint", label: "민트", color: "#c9f7ed", background: "#183c36", accent: "#77e2c5" }),
+    Object.freeze({ id: "blue", label: "블루", color: "#d6e8ff", background: "#203653", accent: "#91c2ff" }),
+    Object.freeze({ id: "lavender", label: "라벤더", color: "#eee0ff", background: "#3b2c50", accent: "#cdb0ff" }),
+    Object.freeze({ id: "amber", label: "앰버", color: "#ffe9bd", background: "#46351c", accent: "#f4c974" })
+  ]);
 
   const DEFAULT_PROVIDER_SETTINGS = Object.freeze({
     provider: "openai-compatible",
@@ -26,8 +43,15 @@
 
   const MAX_TEXT_LENGTH = 10_000;
 
-  function sanitizeUiSettings() {
-    return { ...DEFAULT_UI_SETTINGS };
+  function sanitizeUiSettings(value) {
+    const candidate = value && typeof value === "object" ? value : {};
+    return {
+      targetLanguage: "ko",
+      buttonIcon: BUTTON_ICONS.some((icon) => icon.id === candidate.buttonIcon)
+        ? candidate.buttonIcon : DEFAULT_UI_SETTINGS.buttonIcon,
+      translationTheme: TRANSLATION_THEMES.some((theme) => theme.id === candidate.translationTheme)
+        ? candidate.translationTheme : DEFAULT_UI_SETTINGS.translationTheme
+    };
   }
 
   function sanitizeProviderSettings(value) {
@@ -215,6 +239,8 @@
   return Object.freeze({
     DEFAULT_LLM_MODEL,
     DEFAULT_UI_SETTINGS,
+    BUTTON_ICONS,
+    TRANSLATION_THEMES,
     DEFAULT_PROVIDER_SETTINGS,
     MAX_TEXT_LENGTH,
     sanitizeUiSettings,

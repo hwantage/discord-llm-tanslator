@@ -187,6 +187,58 @@ input[type="password"]:focus {
   padding: 0 28px;
 }
 
+.advanced-settings {
+  margin: 0 28px 24px;
+  border-block: 1px solid var(--rule);
+}
+
+.advanced-settings summary {
+  padding: 17px 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.advanced-settings summary::marker { color: var(--muted); }
+.advanced-settings summary:hover { color: var(--accent); }
+.advanced-settings summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.advanced-description { margin-left: 9px; color: var(--muted); font-size: 12px; font-weight: 400; }
+.advanced-content { display: grid; gap: 25px; padding: 7px 0 22px; }
+.appearance-field { min-width: 0; margin: 0; padding: 0; border: 0; }
+.appearance-field legend { margin-bottom: 7px; padding: 0; }
+.icon-choices, .theme-choices { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 13px; }
+
+.appearance-choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #424b51;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #15181b;
+  cursor: pointer;
+}
+
+.appearance-choice input { width: 14px; height: 14px; margin: 0; accent-color: var(--accent); }
+.appearance-choice:hover { border-color: var(--muted); }
+.appearance-choice:has(input:checked) { border-color: var(--accent); background: #203431; }
+.appearance-choice:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+.choice-sample { display: inline-grid; place-items: center; width: 22px; height: 24px; color: #d5dedd; font-size: 16px; font-weight: 700; }
+.choice-sample svg { width: 21px; height: 21px; }
+.choice-caption { font-size: 12px; }
+.theme-choices .appearance-choice { flex-wrap: wrap; width: 110px; }
+.theme-choices .choice-sample { order: -1; width: 100%; height: 36px; border: 1px solid rgb(255 255 255 / 10%); border-radius: 4px; font-size: 13px; font-weight: 400; }
+.preview-section { min-width: 0; }
+.preview-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; margin-bottom: 10px; }
+.preview-heading h2 { margin: 0; font-size: 13px; font-weight: 650; }
+.preview-heading span { color: var(--muted); font-size: 11px; }
+.message-preview { padding: 20px; border-radius: 8px; color: #dbdee1; background: #313338; font-size: 16px; line-height: 1.375; --text-muted: #b5bac1; }
+.preview-author { margin-bottom: 6px; color: #f2f3f5; font-size: 14px; font-weight: 650; }
+.preview-author span { margin-left: 8px; color: #aab0b9; font-size: 11px; font-weight: 400; }
+.preview-section .field-note { margin-top: 9px; }
+
 .actions button {
   min-height: 42px;
   border-radius: 9px;
@@ -305,6 +357,7 @@ input[type="password"]:focus {
   }
 
   .target-row,
+  .advanced-settings,
   .actions,
   .status {
     margin-inline: 20px;

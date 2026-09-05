@@ -12,7 +12,7 @@ if (!allowedTargets.has(requestedTarget)) {
 }
 
 const targets = requestedTarget === "all" ? ["chromium", "firefox"] : [requestedTarget];
-const files = ["shared.js", "background.js", "content.js", "PRIVACY.md"];
+const files = ["shared.js", "inline-ui.js", "background.js", "content.js", "PRIVACY.md"];
 
 for (const target of targets) {
   const outputDirectory = path.join(projectRoot, "dist", target);

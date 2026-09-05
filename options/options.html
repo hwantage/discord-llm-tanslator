@@ -70,6 +70,37 @@
           <strong>한국어 · KO</strong>
         </section>
 
+        <details id="advanced-settings" class="advanced-settings">
+          <summary><span>Advanced <span class="advanced-description">번역 표시 설정</span></span></summary>
+          <div class="advanced-content">
+            <fieldset class="appearance-field">
+              <legend class="setting-title">번역 버튼 아이콘</legend>
+              <p class="setting-help" id="icon-help">메시지 끝에 표시할 아이콘을 선택하세요.</p>
+              <div id="icon-choices" class="icon-choices" aria-describedby="icon-help"></div>
+            </fieldset>
+
+            <fieldset class="appearance-field">
+              <legend class="setting-title">번역 결과 색상</legend>
+              <p class="setting-help" id="theme-help">텍스트와 배경 색상을 함께 선택하세요. 기본은 배경 없이 표시합니다.</p>
+              <div id="theme-choices" class="theme-choices" aria-describedby="theme-help"></div>
+            </fieldset>
+
+            <section class="preview-section" aria-labelledby="preview-title">
+              <div class="preview-heading">
+                <h2 id="preview-title">미리보기</h2>
+                <span>선택한 모양을 바로 확인하세요</span>
+              </div>
+              <div class="message-preview">
+                <div class="preview-author">Mina <span>오늘 오후 8:41</span></div>
+                <div id="preview-source">Thanks for your help! See you tomorrow.</div>
+                <div id="preview-translation"></div>
+              </div>
+              <p class="field-note">아이콘을 눌러 번역을 접거나, 번역문 끝의 재시도 아이콘을 시험해 보세요.</p>
+            </section>
+            <p class="setting-help">설정 저장을 누르면 열려 있는 Discord 탭에도 적용됩니다.</p>
+          </div>
+        </details>
+
         <div class="actions">
           <button id="save-button" class="primary" type="submit">설정 저장</button>
           <button id="test-button" class="secondary" type="button">연결 테스트</button>
@@ -85,6 +116,7 @@
     </main>
 
     <script src="../shared.js"></script>
+    <script src="../inline-ui.js"></script>
     <script src="options.js"></script>
   </body>
 </html>

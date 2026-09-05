@@ -3,6 +3,7 @@
 
   const extensionApi = globalThis.browser ?? globalThis.chrome;
   const Shared = globalThis.DiscordTranslatorShared;
+  const Ui = globalThis.DiscordTranslatorUi;
   const MESSAGE_SELECTOR =
     'li[id^="chat-messages-"], [data-list-item-id^="chat-messages"]';
   const CONTENT_SELECTORS = [
@@ -17,10 +18,12 @@
   const messageStates = new WeakMap();
   const activeStatesByCacheKey = new Map();
   const translationCache = new Map();
+  const latestRequests = new Map();
   const pendingRoots = new Set();
-  const uiSettings = Shared.sanitizeUiSettings();
+  let uiSettings = Shared.sanitizeUiSettings();
   let scanFrame = 0;
   let traceSequence = 0;
+  let extensionInvalidated = false;
 
   function createTraceId() {
     traceSequence += 1;
@@ -75,6 +78,56 @@
       },
       error
     );
+  }
+
+  function isRuntimeAvailable() {
+    try {
+      return !extensionInvalidated && Boolean(extensionApi.runtime.id);
+    } catch {
+      return false;
+    }
+  }
+
+  function handleRuntimeInterruption(state, error, traceId) {
+    const message = error?.message || "";
+    const needsReload = !isRuntimeAvailable() || /extension context invalidated/i.test(message);
+    const channelClosed = /message (?:channel|port) closed|receiving end does not exist|could not establish connection/i.test(message);
+
+    if (!needsReload && !channelClosed) {
+      return false;
+    }
+
+    if (needsReload) {
+      extensionInvalidated = true;
+      observer.disconnect();
+      if (scanFrame) {
+        cancelAnimationFrame(scanFrame);
+        scanFrame = 0;
+      }
+      pendingRoots.clear();
+    }
+
+    const code = needsReload ? "EXTENSION_RELOADED" : "BACKGROUND_DISCONNECTED";
+    logInfo(traceId, "content.runtime.interrupted", { code });
+    if (state) {
+      renderState(state, "error", {
+        code,
+        message: needsReload
+          ? "확장이 다시 로드되었거나 연결이 해제되었습니다. Discord 페이지를 새로고침해 주세요."
+          : "번역 응답을 기다리는 중 연결이 끊겼습니다. 다시 시도해 주세요.",
+        traceId
+      });
+      if (!needsReload) {
+        // Chromium can reject the pending response just before invalidating the content context.
+        setTimeout(() => {
+          if (state.host.isConnected && state.status === "error" &&
+              state.translationHost.dataset.traceId === traceId && !isRuntimeAvailable()) {
+            handleRuntimeInterruption(state, null, traceId);
+          }
+        }, 0);
+      }
+    }
+    return true;
   }
 
   function getMessageContent(container) {
@@ -212,184 +265,6 @@
     return restored;
   }
 
-  function createButtonHost() {
-    const host = document.createElement("span");
-    host.setAttribute(UI_ATTRIBUTE, "button");
-    host.setAttribute("contenteditable", "false");
-    host.style.marginLeft = "5px";
-    const shadow = host.attachShadow({ mode: "open" });
-    shadow.innerHTML = `
-      <style>
-        :host {
-          display: inline-flex;
-          vertical-align: 0.04em;
-        }
-
-        button {
-          appearance: none;
-          width: 1.62em;
-          height: 1.62em;
-          display: inline-grid;
-          place-items: center;
-          border: 1px solid rgb(181 196 195 / 24%);
-          border-radius: 5px;
-          padding: 0;
-          color: rgb(213 222 221 / 78%);
-          background: rgb(78 89 91 / 28%);
-          box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);
-          font: 700 0.64em/1 ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
-          cursor: pointer;
-          opacity: 0.86;
-          transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease, opacity 120ms ease, transform 120ms ease;
-        }
-
-        button:hover {
-          border-color: rgb(84 226 209 / 45%);
-          color: #d8fffa;
-          background: rgb(84 226 209 / 9%);
-          opacity: 1;
-        }
-
-        button:active {
-          transform: scale(0.96);
-        }
-
-        button:focus-visible {
-          outline: 2px solid #7cf0e3;
-          outline-offset: 2px;
-        }
-
-        button[data-state="loading"] {
-          animation: translator-pulse 900ms ease-in-out infinite alternate;
-          cursor: progress;
-        }
-
-        button[aria-pressed="true"] {
-          color: #c9f7f1;
-          background: rgb(84 226 209 / 13%);
-          border-color: rgb(84 226 209 / 42%);
-          opacity: 1;
-        }
-
-        @keyframes translator-pulse {
-          from { opacity: 0.48; }
-          to { opacity: 1; }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          button { transition: none; }
-          button[data-state="loading"] { animation: none; opacity: 0.65; }
-        }
-      </style>
-      <button type="button" aria-label="한국어로 번역" aria-pressed="false" title="한국어로 번역">한</button>
-    `;
-
-    return { host, button: shadow.querySelector("button") };
-  }
-
-  function createTranslationHost() {
-    const host = document.createElement("div");
-    host.setAttribute(UI_ATTRIBUTE, "translation");
-    host.dataset.state = "idle";
-    host.setAttribute("contenteditable", "false");
-    const shadow = host.attachShadow({ mode: "open" });
-    shadow.innerHTML = `
-      <style>
-        :host {
-          display: block;
-          width: 100%;
-          max-width: 100%;
-          margin-top: 0.28rem;
-          color: var(--text-normal, #dbdee1);
-          font: inherit;
-        }
-
-        .translation {
-          position: relative;
-          display: grid;
-          grid-template-columns: auto minmax(0, 1fr);
-          gap: 0.48rem;
-          align-items: start;
-          box-sizing: border-box;
-          width: 100%;
-          max-width: none;
-          padding-inline-start: 0.58rem;
-        }
-
-        .translation::before {
-          content: "";
-          position: absolute;
-          inset-block: 0.16rem;
-          inset-inline-start: 0;
-          width: 2px;
-          border-radius: 2px;
-          background: #2ac9b7;
-          opacity: 0.88;
-        }
-
-        .label {
-          margin-top: 0.12rem;
-          color: #54e2d1;
-          font: 700 0.64rem/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
-          letter-spacing: 0.035em;
-          user-select: none;
-        }
-
-        .body {
-          min-width: 0;
-          color: var(--text-muted, #b5bac1);
-          font: inherit;
-          line-height: 1.42;
-          white-space: pre-wrap;
-          overflow-wrap: anywhere;
-        }
-
-        .translation[data-state="loading"] .body {
-          opacity: 0.64;
-        }
-
-        .translation[data-state="error"]::before {
-          background: var(--status-danger, #f23f42);
-        }
-
-        .translation[data-state="error"] .label {
-          color: var(--status-danger, #f23f42);
-        }
-
-        .action {
-          grid-column: 2;
-          justify-self: start;
-          appearance: none;
-          margin-top: 0.2rem;
-          border: 0;
-          padding: 0;
-          color: #54e2d1;
-          background: transparent;
-          font: inherit;
-          font-size: 0.74rem;
-          font-weight: 650;
-          line-height: 1.3;
-          cursor: pointer;
-        }
-
-        .action:hover { text-decoration: underline; }
-        .action:focus-visible { outline: 2px solid #7cf0e3; outline-offset: 2px; }
-      </style>
-      <div class="translation" role="status" aria-live="polite" hidden>
-        <span class="label">KO</span>
-        <span class="body"></span>
-        <button class="action" type="button" hidden>다시 시도</button>
-      </div>
-    `;
-
-    return {
-      host,
-      panel: shadow.querySelector(".translation"),
-      body: shadow.querySelector(".body"),
-      action: shadow.querySelector(".action")
-    };
-  }
-
   function renderState(state, nextState, payload = {}) {
     state.status = nextState;
     state.button.dataset.state = nextState;
@@ -402,6 +277,9 @@
       state.translationHost.dataset.traceId = payload.traceId;
     }
     state.action.hidden = true;
+    state.retry.hidden = nextState !== "success";
+    state.retry.disabled = nextState === "loading";
+    state.action.disabled = nextState === "loading";
     state.button.disabled = nextState === "loading";
 
     if (nextState === "idle") {
@@ -441,6 +319,14 @@
     state.button.setAttribute("aria-label", "번역 다시 시도");
     state.button.setAttribute("aria-pressed", "false");
     state.action.hidden = false;
+    if (errorCode === "EXTENSION_RELOADED") {
+      state.action.dataset.action = "reload";
+      state.action.textContent = "Discord 새로고침";
+      state.button.disabled = true;
+      state.button.title = "Discord 페이지를 새로고침해 주세요";
+      state.button.setAttribute("aria-label", "Discord 페이지 새로고침 필요");
+      return;
+    }
     const settingsErrors = new Set([
       "CONFIG_REQUIRED",
       "MODEL_REQUIRED",
@@ -482,8 +368,15 @@
     }
   }
 
-  async function translateState(state, requestedTraceId) {
+  async function translateState(state, requestedTraceId, { force = false } = {}) {
     const traceId = requestedTraceId || createTraceId();
+    if (!isRuntimeAvailable()) {
+      handleRuntimeInterruption(state, null, traceId);
+      return;
+    }
+    if (state.status === "loading") {
+      return;
+    }
     const extraction = extractMessage(state.content);
 
     if (!extraction.text) {
@@ -498,6 +391,9 @@
 
     const sourceHash = Shared.hashText(extraction.signature);
     const cacheKey = createCacheKey(state.messageId, sourceHash);
+    if (force) {
+      translationCache.delete(cacheKey);
+    }
     const cached = cacheGet(cacheKey);
 
     if (state.cacheKey !== cacheKey) {
@@ -527,7 +423,8 @@
       return;
     }
 
-    renderState(state, "loading");
+    latestRequests.set(cacheKey, traceId);
+    renderState(state, "loading", { traceId });
 
     try {
       const response = await extensionApi.runtime.sendMessage({
@@ -535,6 +432,11 @@
         requestId: traceId,
         payload: { text: extraction.text }
       });
+
+      if (latestRequests.get(cacheKey) !== traceId) {
+        logInfo(traceId, "content.response.discarded", { reason: "newer-request" });
+        return;
+      }
 
       logInfo(traceId, "content.response.received", {
         ok: response?.ok === true,
@@ -603,15 +505,25 @@
         rebound: activeState !== state
       });
     } catch (error) {
-      logError(traceId, "content.runtime.failed", error);
       const activeState = getActiveState(cacheKey, sourceHash);
+      const currentState = requestVersion === state.requestVersion && latestRequests.get(cacheKey) === traceId
+        ? activeState : null;
 
-      if (activeState && requestVersion === state.requestVersion) {
-        renderState(activeState, "error", {
+      if (handleRuntimeInterruption(currentState, error, traceId)) {
+        return;
+      }
+      logError(traceId, "content.runtime.failed", error);
+
+      if (currentState) {
+        renderState(currentState, "error", {
           code: "EXTENSION_ERROR",
-          message: "확장 백그라운드에 연결하지 못했습니다. 확장을 다시 로드해 주세요.",
+          message: "번역 요청을 처리하지 못했습니다. 다시 시도하거나 Discord 페이지를 새로고침해 주세요.",
           traceId
         });
+      }
+    } finally {
+      if (latestRequests.get(cacheKey) === traceId) {
+        latestRequests.delete(cacheKey);
       }
     }
   }
@@ -636,6 +548,10 @@
   }
 
   async function openSettings(state, traceId) {
+    if (!isRuntimeAvailable()) {
+      handleRuntimeInterruption(state, null, traceId);
+      return;
+    }
     logInfo(traceId, "content.settings.open.start", { errorState: state.status });
     state.action.disabled = true;
     state.action.textContent = "설정 여는 중…";
@@ -657,6 +573,9 @@
         method: response.result?.method
       });
     } catch (error) {
+      if (handleRuntimeInterruption(state, error, traceId)) {
+        return;
+      }
       logError(traceId, "content.settings.open.failed", error);
       const serialized = Shared.serializeError(error);
       renderState(state, "error", {
@@ -701,6 +620,8 @@
       existingState.host.isConnected &&
       (existingState.status === "idle" || existingState.translationHost.isConnected)
     ) {
+      Ui.applyButtonSettings(existingState.button, uiSettings);
+      Ui.applyTranslationSettings(existingState.translationHost, uiSettings);
       if (existingState.sourceHash !== sourceHash) {
         unregisterActiveState(existingState);
         existingState.sourceHash = sourceHash;
@@ -715,8 +636,8 @@
 
     container.querySelectorAll(`[${UI_ATTRIBUTE}]`).forEach((node) => node.remove());
 
-    const buttonUi = createButtonHost();
-    const translationUi = createTranslationHost();
+    const buttonUi = Ui.createButtonHost(uiSettings);
+    const translationUi = Ui.createTranslationHost(uiSettings);
     content.append(buttonUi.host);
 
     const messageId = getMessageId(container);
@@ -732,22 +653,32 @@
       panel: translationUi.panel,
       body: translationUi.body,
       action: translationUi.action,
+      retry: translationUi.retry,
       sourceHash,
       requestVersion: 0,
       status: "idle"
     };
 
     buttonUi.button.addEventListener("click", () => toggleTranslation(state));
+    translationUi.retry.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const traceId = createTraceId();
+      logInfo(traceId, "content.retry.click", { messageKey: Shared.hashText(state.messageId) });
+      translateState(state, traceId, { force: true });
+    });
     translationUi.action.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
       const traceId = createTraceId();
 
-      if (translationUi.action.dataset.action === "settings") {
+      if (translationUi.action.dataset.action === "reload") {
+        window.location.reload();
+      } else if (translationUi.action.dataset.action === "settings") {
         openSettings(state, traceId);
       } else {
         logInfo(traceId, "content.retry.click", { messageKey: Shared.hashText(state.messageId) });
-        translateState(state, traceId);
+        translateState(state, traceId, { force: true });
       }
     });
 
@@ -805,6 +736,9 @@
   }
 
   function scheduleScan(root) {
+    if (extensionInvalidated) {
+      return;
+    }
     pendingRoots.add(root || document.body);
 
     if (!scanFrame) {
@@ -812,7 +746,20 @@
     }
   }
 
-  function startTranslator() {
+  async function startTranslator() {
+    try {
+      const stored = await extensionApi.storage.local.get("uiSettings");
+      uiSettings = Shared.sanitizeUiSettings(stored.uiSettings);
+    } catch (error) {
+      if (handleRuntimeInterruption(null, error, createTraceId())) {
+        return;
+      }
+      console.error(`${LOG_PREFIX} content.settings.load.failed`, error);
+    }
+    if (!isRuntimeAvailable()) {
+      handleRuntimeInterruption(null, null, createTraceId());
+      return;
+    }
     console.info(`${LOG_PREFIX} content.ready`, {
       version: extensionApi.runtime.getManifest?.().version || "unknown",
       targetLanguage: uiSettings.targetLanguage
@@ -838,6 +785,10 @@
 
     if (changes.providerSettings) {
       translationCache.clear();
+    }
+    if (changes.uiSettings) {
+      uiSettings = Shared.sanitizeUiSettings(changes.uiSettings.newValue);
+      scheduleScan(document.body);
     }
   });
 
