@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko" class="theme-dark"><head><meta charset="utf-8"><title>영어 작성 테스트</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;background:#18191e;color:#dce0e7;font:14px/1.6 system-ui,sans-serif}.intro{padding:16px 24px;border-bottom:1px solid #363943;color:#95a2b6}.panes{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 60px);gap:1px;background:#383d47}.pane{display:flex;flex-direction:column;min-height:0;background:#202228}h2{font-size:16px;padding:14px 24px;margin:0;border-bottom:1px solid #363943}.chatContent_fixture{display:flex;flex:1;flex-direction:column;min-height:0}.messagesWrapper_fixture{flex:1;overflow:auto;padding:18px 24px}ol{list-style:none;margin:0;padding:0}.message_fixture{padding:14px 12px;border-radius:6px;margin-bottom:8px}.message_fixture.replying_fixture{background:#294139;border-left:3px solid #85e4ce}.message_fixture h3{font-size:12px;color:#90c2ed;margin:0 0 4px}time{font-size:10px;color:#8491a6;margin-left:12px}.messageContent_fixture{white-space:pre-wrap}.repliedMessage_fixture{color:#8d9bad;font-size:11px;margin-bottom:4px}form{padding:14px;margin:0}.channelTextArea_fixture{background:#30333d;border:1px solid #414755;border-radius:9px}.inner_fixture{display:flex;align-items:center}.textArea_fixture{flex:1;min-width:0;padding:13px}.buttons_fixture{display:flex;padding:6px}.editor_fixture{outline:0;min-height:24px;white-space:pre-wrap}.replyBar_fixture{padding:8px 12px;border-bottom:1px solid #4f5c6b;font-size:12px}.replyBar_fixture button{float:right}.reply-action{font:11px system-ui;padding:3px 7px;background:#303c49;border:1px solid #526276;border-radius:4px;color:#cddcec;margin-top:8px}.thread-mark{color:#9cdacb;font-size:11px;margin-left:8px}.fake-search{display:none}
+</style></head><body>
+<div class="intro">로컬 검증 화면 · 실제 Discord 연결이나 전송 기능이 없는 가상 대화입니다.</div>
+<div contenteditable="true" role="combobox" data-slate-editor="true" class="fake-search">검색</div>
+<div class="panes">
+  <div class="pane"><h2># general</h2>
+    <main class="chatContent_fixture" aria-label="general (채널)">
+      <div class="messagesWrapper_fixture"><ol data-list-id="chat-messages" role="list">
+        <li id="chat-messages-100-1000"><div role="article" class="message_fixture" data-list-item-id="chat-messages___chat-messages-100-1000" aria-labelledby="message-username-1000 message-content-1000">
+          <div class="contents_fixture"><h3><span id="message-username-1000"><span class="username_fixture">Alex</span></span><time datetime="2026-09-06T01:00:00Z">10:00</time></h3><div class="messageContent_fixture" id="message-content-1000">Try clearing the cache, then restart the app.</div></div><button type="button" role="button" aria-label="답장" class="reply-action">답장</button>
+        </div></li>
+        <li id="chat-messages-100-1001"><div role="article" class="message_fixture" data-list-item-id="chat-messages___chat-messages-100-1001" aria-labelledby="message-reply-context-1001 message-content-1001">
+          <div id="message-reply-context-1001" class="repliedMessage_fixture"><span class="username_fixture">Alex</span><div id="message-content-900">This is an old quoted preview, not the reply's own body.</div></div>
+          <div class="contents_fixture"><h3><span id="message-username-1001"><span class="username_fixture">Sam</span></span><time datetime="2026-09-06T01:01:00Z">10:01</time></h3><div class="messageContent_fixture" id="message-content-1001">That helped. Thank you!</div></div><button type="button" role="button" aria-label="답장" class="reply-action">답장</button>
+        </div></li>
+      </ol></div>
+      <form><div class="channelBottomBarArea_fixture"><div class="channelTextArea_fixture"><div class="inner_fixture"><div class="textArea_fixture"><div class="editor_fixture" role="textbox" contenteditable="true" aria-label="#general에 메시지 보내기" data-slate-editor="true" data-slate-node="value"><div data-slate-node="element"><span data-slate-node="text"><span data-slate-leaf="true"><span data-slate-zero-width="n" data-slate-length="0">&#xfeff;<br></span></span></span></div></div></div><div class="buttons_fixture"></div></div></div></div></form>
+    </main>
+  </div>
+  <div class="chatLayerWrapper_fixture pane"><h2>Release feedback <span class="thread-mark">스레드</span></h2>
+    <section class="chatContent_fixture" role="complementary" aria-label="Release feedback (스레드)">
+      <div class="messagesWrapper_fixture"><ol data-list-id="chat-messages" role="list">
+        <li id="chat-messages-200-199"><div role="article" class="message_fixture" data-list-item-id="chat-messages___chat-messages-200-199" aria-labelledby="message-username-200 message-content-200">
+          <div class="contents_fixture"><h3><span id="message-username-200"><span class="username_fixture">Jordan</span></span><time datetime="2026-09-06T01:00:00Z">10:00</time></h3><div class="messageContent_fixture" id="message-content-200">The release notes seem to be missing some changes. Could someone check the workflow?</div></div><button type="button" role="button" aria-label="답장" class="reply-action">답장</button>
+        </div></li>
+        <li id="chat-messages-200-201"><div role="article" class="message_fixture" data-list-item-id="chat-messages___chat-messages-200-201" aria-labelledby="message-username-201 message-content-201">
+          <div class="contents_fixture"><h3><span id="message-username-201"><span class="username_fixture">Alex</span></span><time datetime="2026-09-06T01:03:00Z">10:03</time></h3><div class="messageContent_fixture" id="message-content-201">I fixed the workflow. The updated release notes are available now.</div></div><button type="button" role="button" aria-label="답장" class="reply-action">답장</button>
+        </div></li>
+        <li id="chat-messages-200-202"><div role="article" class="message_fixture" data-list-item-id="chat-messages___chat-messages-200-202" aria-labelledby="message-username-201 message-content-202">
+          <div class="contents_fixture"><time datetime="2026-09-06T01:04:00Z">10:04</time><div class="messageContent_fixture" id="message-content-202">Please let me know if anything else is missing.</div></div><button type="button" role="button" aria-label="답장" class="reply-action">답장</button>
+        </div></li>
+      </ol></div>
+      <form><div class="channelBottomBarArea_fixture"><div class="channelTextArea_fixture"><div class="inner_fixture"><div class="textArea_fixture"><div class="editor_fixture" role="textbox" contenteditable="true" aria-label="Release feedback에 메시지 보내기" data-slate-editor="true" data-slate-node="value"><div data-slate-node="element"><span data-slate-node="text"><span data-slate-leaf="true"><span data-slate-zero-width="n" data-slate-length="0">&#xfeff;<br></span></span></span></div></div></div><div class="buttons_fixture"></div></div></div></div></form>
+    </section>
+  </div>
+</div>
+</body></html>

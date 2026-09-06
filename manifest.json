@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Discord 한줄 번역",
-  "version": "0.2.4",
-  "description": "Discord 메시지 끝의 ‘한’ 버튼으로 OpenAI 호환 LLM 한국어 번역을 원문 아래에 표시합니다.",
+  "version": "0.3.0",
+  "description": "Discord 메시지를 한국어로 번역하고, 원글과 선택한 스레드 문맥을 참고해 영어 작성 문장 3개를 추천합니다.",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
@@ -44,7 +44,10 @@
       "js": [
         "shared.js",
         "inline-ui.js",
-        "content.js"
+        "composer-dom.js",
+        "composer-ui.js",
+        "content.js",
+        "composer.js"
       ],
       "run_at": "document_idle"
     }

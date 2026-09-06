@@ -1,16 +1,28 @@
 {
   "name": "discord-inline-korean-translator",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "private": true,
-  "description": "OpenAI 호환 LLM으로 Discord 웹 메시지에 클릭형 한국어 번역을 추가하는 브라우저 확장",
+  "description": "OpenAI 호환 LLM으로 Discord 메시지를 한국어로 번역하고 문맥을 참고해 영어 작성을 돕는 브라우저 확장",
   "scripts": {
     "build": "node scripts/build.mjs all",
     "build:chromium": "node scripts/build.mjs chromium",
     "build:firefox": "node scripts/build.mjs firefox",
     "test": "node --test tests/*.test.cjs",
-    "check": "node --check shared.js && node --check inline-ui.js && node --check background.js && node --check content.js && node --check options/options.js && npm test && npm run build"
+    "test:browser": "npm run build:chromium && node scripts/test-composer-browser.mjs",
+    "check": "node --check shared.js && node --check inline-ui.js && node --check background.js && node --check content.js && node --check composer-dom.js && node --check composer-ui.js && node --check composer.js && node --check options/options.js && npm test && npm run build"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "jsdom": "^26.1.0",
+    "playwright": "^1.63.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "slate": "^0.126.2",
+    "slate-dom": "^0.126.0",
+    "slate-history": "^0.113.1",
+    "slate-react": "^0.126.4"
   }
 }

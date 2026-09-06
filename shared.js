@@ -42,6 +42,65 @@
   });
 
   const MAX_TEXT_LENGTH = 10_000;
+  const COMPOSER_LIMITS = Object.freeze({ intent: 4_000, context: 16_000, messages: 12 });
+  const REPLY_TONES = Object.freeze([
+    Object.freeze({ id: "natural", label: "자연스럽게" }),
+    Object.freeze({ id: "friendly", label: "친근하게" }),
+    Object.freeze({ id: "polite", label: "정중하게" })
+  ]);
+
+  // Keep local message/channel IDs and display names out of the provider payload.
+  function sanitizeComposeRequest(value) {
+    const mode = value?.mode;
+    if (!["new", "reply", "thread"].includes(mode)) {
+      throw createError("INVALID_COMPOSE_REQUEST", "작성 상황을 확인하지 못했습니다. 작성 창을 다시 열어 주세요.");
+    }
+    const intent = typeof value.intent === "string" ? value.intent.trim() : "";
+    if (!intent) {
+      throw createError("EMPTY_INTENT", "전달할 내용이나 의도를 한국어로 작성해 주세요.");
+    }
+    if (intent.length > COMPOSER_LIMITS.intent) {
+      throw createError("INTENT_TOO_LONG", `작성할 내용은 ${COMPOSER_LIMITS.intent.toLocaleString("ko-KR")}자까지 입력할 수 있습니다.`);
+    }
+    if (!Array.isArray(value.context) || value.context.length > COMPOSER_LIMITS.messages) {
+      throw createError("CONTEXT_TOO_LONG", `참고할 대화는 ${COMPOSER_LIMITS.messages}개까지 선택할 수 있습니다.`);
+    }
+    if ((mode === "new" && value.context.length !== 0) ||
+        (mode === "reply" && value.context.length !== 1) ||
+        (mode === "thread" && value.context.length === 0)) {
+      throw createError("INVALID_COMPOSE_CONTEXT", "답장 원글 또는 참고할 대화를 확인해 주세요.");
+    }
+    const context = value.context.map((entry) => {
+      if (typeof entry?.text !== "string" || !entry.text.trim()) {
+        throw createError("CONTEXT_UNAVAILABLE", "참고할 글의 본문을 확인할 수 없습니다. 원글을 불러온 뒤 다시 선택해 주세요.");
+      }
+      return {
+        speaker: /^participant_\d{1,2}$/.test(entry.speaker) ? entry.speaker : "participant_1",
+        text: entry.text.trim()
+      };
+    });
+    if (context.reduce((length, entry) => length + entry.text.length, 0) > COMPOSER_LIMITS.context) {
+      throw createError("CONTEXT_TOO_LONG", `참고 대화가 ${COMPOSER_LIMITS.context.toLocaleString("ko-KR")}자를 넘습니다. 선택한 글을 줄여 주세요.`);
+    }
+    return { mode, intent, context };
+  }
+
+  function validateReplySuggestions(value) {
+    const fail = () => createError("INVALID_SUGGESTIONS", "영어와 한국어가 짝을 이룬 추천 3개를 받지 못했습니다. 다시 추천해 주세요.");
+    if (!Array.isArray(value) || value.length !== REPLY_TONES.length) throw fail();
+    const suggestions = REPLY_TONES.map(({ id }) => {
+      const entries = value.filter((entry) => entry?.tone === id);
+      const entry = entries[0];
+      if (entries.length !== 1 || typeof entry?.en !== "string" || typeof entry?.ko !== "string" ||
+          !entry.en.trim() || !entry.ko.trim() || entry.en.length > MAX_TEXT_LENGTH || entry.ko.length > MAX_TEXT_LENGTH) {
+        throw fail();
+      }
+      return { tone: id, en: entry.en.trim(), ko: entry.ko.trim() };
+    });
+    const unique = new Set(suggestions.map((entry) => entry.en.toLowerCase().replace(/\s+/g, " ").replace(/[.!?]+$/, "")));
+    if (unique.size !== REPLY_TONES.length) throw fail();
+    return suggestions;
+  }
 
   function sanitizeUiSettings(value) {
     const candidate = value && typeof value === "object" ? value : {};
@@ -243,6 +302,10 @@
     TRANSLATION_THEMES,
     DEFAULT_PROVIDER_SETTINGS,
     MAX_TEXT_LENGTH,
+    COMPOSER_LIMITS,
+    REPLY_TONES,
+    sanitizeComposeRequest,
+    validateReplySuggestions,
     sanitizeUiSettings,
     sanitizeProviderSettings,
     normalizeApiEndpoint,

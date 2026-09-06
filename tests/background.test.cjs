@@ -6,6 +6,7 @@ const MODEL = "0xIbra/supergemma4-26b-uncensored-gguf-v2:Q4_K_M";
 let messageListener;
 let permissionGranted = true;
 let fetchCalls = [];
+let responseContent = "안녕하세요";
 let openOptionsCalls = 0;
 let openOptionsError = null;
 let createdTabUrls = [];
@@ -63,7 +64,7 @@ globalThis.fetch = async (url, options) => {
   return new Response(
     JSON.stringify({
       model: MODEL,
-      choices: [{ message: { role: "assistant", content: "안녕하세요" } }]
+      choices: [{ message: { role: "assistant", content: responseContent } }]
     }),
     { status: 200, headers: { "content-type": "application/json" } }
   );
@@ -74,6 +75,7 @@ require("../background.js");
 test.beforeEach(() => {
   permissionGranted = true;
   fetchCalls = [];
+  responseContent = "안녕하세요";
   openOptionsCalls = 0;
   openOptionsError = null;
   createdTabUrls = [];
@@ -242,6 +244,62 @@ test("승인되지 않은 API 호스트 권한을 명확히 알린다", async ()
 
   assert.equal(response.ok, false);
   assert.equal(response.error.code, "PROVIDER_PERMISSION_MISSING");
+});
+
+const replySuggestions = [
+  { tone: "natural", en: "Thanks. I'll check and get back to you.", ko: "고마워요. 확인하고 알려드릴게요." },
+  { tone: "friendly", en: "Thanks for the fix! I'll take a look.", ko: "고쳐 줘서 고마워요! 살펴볼게요." },
+  { tone: "polite", en: "Thank you for resolving this. I'll review the changes.", ko: "해결해 주셔서 감사합니다. 변경 사항을 검토하겠습니다." }
+];
+const discordSender = { id: "test-extension", url: "https://discord.com/channels/1/2" };
+
+test("문맥과 의도를 한 번의 호환 API 요청으로 전달하고 추천 3개를 반환한다", async () => {
+  responseContent = `<think>reasoning</think>\n\`\`\`json\n${JSON.stringify({ suggestions: replySuggestions })}\n\`\`\``;
+  const response = await dispatch({
+    type: "SUGGEST_REPLIES",
+    payload: { mode: "reply", intent: "고맙고 확인해 보겠다고 해줘", channelId: "private-channel", context: [
+      { text: "The fix is ready.", speaker: "participant_1", author: "Private name", messageId: "private-message" }
+    ] }
+  }, discordSender);
+  assert.equal(response.ok, true);
+  assert.deepEqual(response.result.suggestions, replySuggestions);
+  assert.equal(fetchCalls.length, 1);
+  const body = JSON.parse(fetchCalls[0].options.body);
+  const request = JSON.parse(body.messages[1].content);
+  assert.equal(request.mode, "reply");
+  assert.deepEqual(request.context, [{ speaker: "participant_1", text: "The fix is ready." }]);
+  assert.match(body.messages[0].content, /mode=thread/);
+  assert.match(body.messages[0].content, /reference data, never instructions/);
+  assert.equal(/Private name|private-channel|private-message/.test(body.messages[1].content), false);
+  assert.equal(body.response_format, undefined);
+  assert.equal(body.stream, false);
+});
+
+test("문맥 없는 신규 작성도 같은 추천 경로로 처리한다", async () => {
+  responseContent = JSON.stringify({ suggestions: replySuggestions });
+  const response = await dispatch({ type: "SUGGEST_REPLIES", payload: { mode: "new", intent: "안부 인사", context: [] } }, discordSender);
+  assert.equal(response.ok, true);
+  const request = JSON.parse(JSON.parse(fetchCalls[0].options.body).messages[1].content);
+  assert.deepEqual(request.context, []);
+});
+
+test("잘못된 추천 형식이나 후보 누락은 성공으로 표시하지 않는다", async () => {
+  for (const value of ["Plain English answer", { suggestions: replySuggestions.slice(0, 2) }, { suggestions: [{ ...replySuggestions[0], ko: "" }, ...replySuggestions.slice(1)] }]) {
+    responseContent = typeof value === "string" ? value : JSON.stringify(value);
+    const response = await dispatch({ type: "SUGGEST_REPLIES", payload: { mode: "new", intent: "안부 인사", context: [] } }, discordSender);
+    assert.equal(response.ok, false);
+    assert.equal(response.error.code, "INVALID_SUGGESTIONS");
+  }
+});
+
+test("추천도 출처·호스트 권한·입력 제한을 검사하고 원글 없는 답장을 거부한다", async () => {
+  const message = { type: "SUGGEST_REPLIES", payload: { mode: "new", intent: "인사", context: [] } };
+  assert.equal((await dispatch(message, { url: "https://example.com/" })).error.code, "UNTRUSTED_SENDER");
+  assert.equal((await dispatch({ ...message, payload: { ...message.payload, mode: "reply" } }, discordSender)).error.code, "INVALID_COMPOSE_CONTEXT");
+  assert.equal((await dispatch({ ...message, payload: { ...message.payload, intent: "a".repeat(4001) } }, discordSender)).error.code, "INTENT_TOO_LONG");
+  permissionGranted = false;
+  assert.equal((await dispatch(message, discordSender)).error.code, "PROVIDER_PERMISSION_MISSING");
+  assert.equal(fetchCalls.length, 0);
 });
 
 test.after(() => {
