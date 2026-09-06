@@ -30,6 +30,17 @@ Chrome 138 이상의 내장 `Translator` API에 의존하지 않습니다. OpenA
 확장이 브라우저에서 활성화되어 있으면 지원하는 Discord 메시지에 `[한]`, 글 작성 입력창에 `[영어]` 버튼을 표시합니다. 확장 기능을 중지하려면 브라우저의 확장 관리 화면에서 비활성화합니다.
 
 <img width="1449" height="777" alt="image" src="https://github.com/user-attachments/assets/859ce478-bfaa-4287-bff2-b2535ef884c2" />
+<img width="715" height="860" alt="image" src="https://github.com/user-attachments/assets/d6685482-4ef4-4f90-bda5-4d9f690919ca" />
+
+<img width="479" height="718" alt="image" src="https://github.com/user-attachments/assets/72745eb4-381a-4ea6-8fec-468fd10451d5" />
+<img width="481" height="836" alt="image" src="https://github.com/user-attachments/assets/30152006-520c-4bb7-8f08-a65eeb1c81f3" />
+
+
+<img width="888" height="1035" alt="image" src="https://github.com/user-attachments/assets/8c665e55-63dd-4251-a99c-a85bd40be3ee" />
+<img width="885" height="707" alt="image" src="https://github.com/user-attachments/assets/f4892be2-fa5e-4118-8d8d-c111d74621a6" />
+
+
+
 
 
 ## 지원 환경
