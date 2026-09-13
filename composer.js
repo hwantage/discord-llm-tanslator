@@ -67,7 +67,7 @@
         label: "Discord 새로고침", run: () => root.location.reload()
       });
     } else {
-      const settingsError = ["PROVIDER_PERMISSION_MISSING", "API_AUTH_ERROR", "API_UNREACHABLE", "MODEL_NOT_FOUND", "CONFIG_REQUIRED"].includes(error?.code);
+      const settingsError = ["WEBLLM_NOT_READY", "WEBGPU_UNAVAILABLE", "WEBLLM_LOAD_FAILED", "WEBLLM_LOAD_TIMEOUT", "PROVIDER_PERMISSION_MISSING", "API_AUTH_ERROR", "API_UNREACHABLE", "MODEL_NOT_FOUND", "CONFIG_REQUIRED"].includes(error?.code);
       state.ui.setStatus(message, "error", settingsError ? { label: "연결 설정 열기", run: async () => {
         try {
           const response = await extensionApi.runtime.sendMessage({ type: "OPEN_OPTIONS_PAGE" });

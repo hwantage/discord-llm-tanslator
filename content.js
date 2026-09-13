@@ -314,7 +314,9 @@
 
     const errorCode = payload.code || "UNKNOWN_ERROR";
     const traceSuffix = payload.traceId ? ` · ${payload.traceId}` : "";
-    state.body.textContent = `${payload.message || "번역하지 못했습니다."} [${errorCode}${traceSuffix}]`;
+    state.body.textContent = errorCode === "INVALID_RESPONSE"
+      ? "번역하지 못했습니다."
+      : `${payload.message || "번역하지 못했습니다."} [${errorCode}${traceSuffix}]`;
     state.button.title = "번역 다시 시도";
     state.button.setAttribute("aria-label", "번역 다시 시도");
     state.button.setAttribute("aria-pressed", "false");
@@ -328,6 +330,10 @@
       return;
     }
     const settingsErrors = new Set([
+      "WEBLLM_NOT_READY",
+      "WEBGPU_UNAVAILABLE",
+      "WEBLLM_LOAD_FAILED",
+      "WEBLLM_LOAD_TIMEOUT",
       "CONFIG_REQUIRED",
       "MODEL_REQUIRED",
       "INVALID_MODEL",

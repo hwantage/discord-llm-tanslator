@@ -69,13 +69,14 @@ function state(text = "Hello https://example.com") {
 
 const success = (translatedText) => ({ ok: true, result: { translatedText } });
 
-test("재시도는 캐시를 건너뛰고 새 결과로 교체하며 일반 토글은 요청하지 않는다", async () => {
+test("영어로 반환된 결과도 표시하고 재시도하면 캐시를 건너뛰어 새 결과로 교체한다", async () => {
   const app = harness();
   const message = state();
   const initial = app.translateState(message);
-  app.pending.shift()(success("첫 번역 __DTX_0__"));
+  app.pending.shift()(success("Hello __DTX_0__"));
   await initial;
-  assert.equal(message.body.textContent, "첫 번역 https://example.com");
+  assert.equal(message.body.textContent, "Hello https://example.com");
+  assert.equal(message.status, "success");
   assert.equal(message.retry.hidden, false);
   app.toggleTranslation(message);
   assert.equal(message.panel.hidden, true);

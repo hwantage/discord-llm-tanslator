@@ -8,7 +8,7 @@ const optionsHtml = readFileSync(path.join(projectRoot, "options/options.html"),
 const optionsCss = readFileSync(path.join(projectRoot, "options/options.css"), "utf8");
 
 test("설정 화면 제목은 줄바꿈 없이 한 줄로 표시한다", () => {
-  assert.match(optionsHtml, /<h1>메시지 끝에서 바로 번역<\/h1>/);
+  assert.match(optionsHtml, /<h1>Discord 무료 번역기<\/h1>/);
   assert.equal(/<h1>[^<]*<br/i.test(optionsHtml), false);
 });
 

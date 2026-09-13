@@ -12,6 +12,7 @@
   "use strict";
 
   const DEFAULT_LLM_MODEL = "0xIbra/supergemma4-26b-uncensored-gguf-v2:Q4_K_M";
+  const WEBLLM_MODEL_ID = "Qwen2.5-7B-Instruct-q4f16_1-MLC";
 
   const DEFAULT_UI_SETTINGS = Object.freeze({
     targetLanguage: "ko",
@@ -35,7 +36,8 @@
   ]);
 
   const DEFAULT_PROVIDER_SETTINGS = Object.freeze({
-    provider: "openai-compatible",
+    provider: "webllm",
+    webllmModelId: WEBLLM_MODEL_ID,
     endpoint: "http://localhost:11434/v1",
     model: DEFAULT_LLM_MODEL,
     apiKey: ""
@@ -95,6 +97,9 @@
           !entry.en.trim() || !entry.ko.trim() || entry.en.length > MAX_TEXT_LENGTH || entry.ko.length > MAX_TEXT_LENGTH) {
         throw fail();
       }
+      // Small local models sometimes return "..." or put Korean in every field.
+      // Those are not usable English/Korean suggestions even if the JSON is valid.
+      if (!/[A-Za-z]/.test(entry.en) || !/[가-힣]/.test(entry.ko)) throw fail();
       return { tone: id, en: entry.en.trim(), ko: entry.ko.trim() };
     });
     const unique = new Set(suggestions.map((entry) => entry.en.toLowerCase().replace(/\s+/g, " ").replace(/[.!?]+$/, "")));
@@ -116,6 +121,7 @@
   function sanitizeProviderSettings(value) {
     const candidate = value && typeof value === "object" ? value : {};
     const isLegacyLibreTranslate =
+      candidate.provider !== "webllm" &&
       candidate.provider !== "ollama" &&
       candidate.provider !== "openai-compatible" &&
       typeof candidate.model !== "string";
@@ -151,7 +157,12 @@
     }
 
     return {
-      provider: "openai-compatible",
+      // Preserve existing API connections; only fresh/default settings use WebLLM.
+      // endpoint/model/apiKey remain the saved API profile even in WebLLM mode.
+      provider: candidate.provider === "webllm" || isLegacyLibreTranslate
+        ? "webllm" : "openai-compatible",
+      webllmModelId: typeof candidate.webllmModelId === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(candidate.webllmModelId)
+        ? candidate.webllmModelId : WEBLLM_MODEL_ID,
       endpoint,
       model,
       apiKey
@@ -297,6 +308,7 @@
 
   return Object.freeze({
     DEFAULT_LLM_MODEL,
+    WEBLLM_MODEL_ID,
     DEFAULT_UI_SETTINGS,
     BUTTON_ICONS,
     TRANSLATION_THEMES,

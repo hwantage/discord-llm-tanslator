@@ -1,3 +1,10 @@
 dist/
 node_modules/
+.cache/
+/webllm-provider.js
+/webllm-provider.js.LEGAL.txt
+/webllm/*.wasm
+/webllm/host.js
+/webllm/sandbox.js
+/webllm/*.js.LEGAL.txt
 .DS_Store

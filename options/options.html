@@ -14,19 +14,71 @@
         </div>
         <div>
           <p class="eyebrow">Discord inline translator</p>
-          <h1>메시지 끝에서 바로 번역</h1>
-          <p class="lede">원문은 그대로 두고, 원하는 OpenAI 호환 LLM이 만든 한국어 번역을 바로 아래에 붙입니다.</p>
-          <span class="local-badge">OPENAI-COMPATIBLE · LOCAL OR CLOUD</span>
+          <h1>Discord 무료 번역기</h1>
+          <p class="lede">브라우저에서 한국어로 번역하고 영어 댓글을 작성합니다.</p>
         </div>
       </header>
 
       <form id="settings-form" class="settings-card">
+        <fieldset id="provider" class="provider-switch" disabled aria-labelledby="provider-title" aria-describedby="provider-help">
+          <legend class="setting-heading"><span id="provider-title" class="setting-title">실행 방식</span><span id="provider-help" class="setting-description">실행 방식을 바꿔도 각 방식의 모델과 연결 정보는 유지됩니다.</span></legend>
+          <div class="provider-choices">
+            <label class="provider-choice">
+              <input id="provider-webllm" type="radio" name="provider" value="webllm" checked>
+              <span class="provider-check" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m4.5 10 3.5 3.5 7.5-7.5"/></svg></span>
+              <span><strong>WebLLM</strong><small>브라우저에서 모델 실행</small></span>
+            </label>
+            <label class="provider-choice">
+              <input id="provider-api" type="radio" name="provider" value="openai-compatible">
+              <span class="provider-check" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m4.5 10 3.5 3.5 7.5-7.5"/></svg></span>
+              <span><strong>Ollama / API</strong><small>사용 중인 모델 서버 연결</small></span>
+            </label>
+          </div>
+        </fieldset>
+
+        <section id="webllm-settings" class="setting-row">
+          <div class="model-heading model-section-heading">
+            <div class="setting-heading"><label class="setting-title" for="webllm-model">브라우저 모델</label><span id="model-help" class="setting-description">모델을 골라 필요한 것만 다운로드하세요. 저장된 모델은 다시 내려받지 않고 사용할 수 있습니다.</span></div>
+            <a class="catalog-link" href="https://github.com/mlc-ai/web-llm/blob/main/src/config.ts" target="_blank" rel="noreferrer">공식 모델 목록</a>
+          </div>
+          <div class="model-search-row">
+            <input id="model-search" type="search" placeholder="모델 검색 — Qwen, Gemma, 3B…" aria-label="WebLLM 모델 검색" autocomplete="off" disabled>
+            <select id="model-filter" aria-label="모델 목록 필터" disabled>
+              <option value="all">모든 모델</option>
+              <option value="downloaded">다운로드된 모델</option>
+              <option value="chat">문장 생성</option>
+              <option value="vision">이미지·문장 생성</option>
+            </select>
+          </div>
+          <select id="webllm-model" name="webllmModelId" aria-describedby="model-help model-count" disabled><option value="">모델 목록을 불러오는 중…</option></select>
+          <p id="model-count" class="field-note"></p>
+          <div id="model-details" class="model-details" hidden>
+            <div class="model-heading"><strong id="model-name"></strong><span id="model-cache-badge" class="cache-badge"></span></div>
+            <dl class="model-facts">
+              <div><dt>다운로드 용량</dt><dd id="model-size"></dd></div>
+              <div><dt>예상 GPU 메모리</dt><dd id="model-memory"></dd></div>
+              <div><dt>문맥 길이</dt><dd id="model-context"></dd></div>
+            </dl>
+            <p class="field-note"><a id="model-link" target="_blank" rel="noreferrer">모델 정보·라이선스</a><span id="model-applied"></span></p>
+          </div>
+          <div class="model-actions">
+            <button id="download-button" class="primary" type="button" disabled>모델 다운로드</button>
+            <button id="webllm-test-button" class="secondary" type="button" disabled>모델 연결 테스트</button>
+          </div>
+          <progress id="model-progress" max="1" value="0" hidden aria-label="모델 준비 진행률"></progress>
+          <p id="model-status" class="setting-help" role="status" aria-live="polite"></p>
+          <p class="field-note">연결 테스트 또는 설정 저장을 누르면 선택한 모델이 번역에 적용됩니다.</p>
+          <p id="webllm-test-result" class="status model-result" role="status" aria-live="polite"></p>
+        </section>
+
+        <fieldset id="api-settings" class="provider-fields" hidden disabled>
+          <legend class="sr-only">Ollama / OpenAI 호환 API 연결</legend>
         <section class="setting-row">
-          <label class="setting-title" for="endpoint">API Base URL</label>
-          <p class="setting-help">OpenAI 호환 <code>chat/completions</code> API의 Base URL을 입력하세요.</p>
+          <div class="setting-heading"><label class="setting-title" for="endpoint">API Base URL</label><span id="endpoint-help" class="setting-description">OpenAI 호환 <code>chat/completions</code> API의 Base URL을 입력하세요.</span></div>
           <input
             id="endpoint"
             name="endpoint"
+            aria-describedby="endpoint-help"
             type="url"
             inputmode="url"
             spellcheck="false"
@@ -38,11 +90,11 @@
         </section>
 
         <section class="setting-row">
-          <label class="setting-title" for="model">번역 모델</label>
-          <p class="setting-help">연결할 제공자가 인식하는 모델 ID를 정확히 입력하세요.</p>
+          <div class="setting-heading"><label class="setting-title" for="model">번역 모델</label><span id="api-model-help" class="setting-description">연결할 제공자가 인식하는 모델 ID를 정확히 입력하세요.</span></div>
           <input
             id="model"
             name="model"
+            aria-describedby="api-model-help"
             type="text"
             spellcheck="false"
             autocomplete="off"
@@ -52,11 +104,11 @@
         </section>
 
         <section class="setting-row">
-          <label class="setting-title" for="api-key">API 키 <span class="optional">선택</span></label>
-          <p class="setting-help">인증이 필요한 제공자만 입력하세요. 값이 없으면 인증 헤더 없이 요청합니다.</p>
+          <div class="setting-heading"><label class="setting-title" for="api-key">API 키 <span class="optional">선택</span></label><span id="api-key-help" class="setting-description">인증이 필요한 제공자만 입력하세요. 값이 없으면 인증 헤더 없이 요청합니다.</span></div>
           <input
             id="api-key"
             name="apiKey"
+            aria-describedby="api-key-help"
             type="password"
             spellcheck="false"
             autocomplete="off"
@@ -64,6 +116,12 @@
           >
           <p class="field-note">키는 브라우저의 확장 전용 로컬 저장소에 보관됩니다. 원격 서버에 키를 보낼 때는 HTTPS만 허용합니다.</p>
         </section>
+
+        <div class="api-test-area">
+          <div class="model-actions"><button id="api-test-button" class="secondary" type="button" disabled>모델 연결 테스트</button></div>
+          <p id="api-test-result" class="status model-result" role="status" aria-live="polite"></p>
+        </div>
+        </fieldset>
 
         <section class="target-row" aria-label="번역 언어">
           <span>번역 언어</span>
@@ -73,15 +131,13 @@
         <details id="advanced-settings" class="advanced-settings">
           <summary><span>Advanced <span class="advanced-description">번역 표시 설정</span></span></summary>
           <div class="advanced-content">
-            <fieldset class="appearance-field">
-              <legend class="setting-title">번역 버튼 아이콘</legend>
-              <p class="setting-help" id="icon-help">메시지 끝에 표시할 아이콘을 선택하세요.</p>
+            <fieldset class="appearance-field" aria-labelledby="icon-title">
+              <legend class="setting-heading"><span id="icon-title" class="setting-title">번역 버튼 아이콘</span><span id="icon-help" class="setting-description">메시지 끝에 표시할 아이콘을 선택하세요.</span></legend>
               <div id="icon-choices" class="icon-choices" aria-describedby="icon-help"></div>
             </fieldset>
 
-            <fieldset class="appearance-field">
-              <legend class="setting-title">번역 결과 색상</legend>
-              <p class="setting-help" id="theme-help">텍스트와 배경 색상을 함께 선택하세요. 기본은 배경 없이 표시합니다.</p>
+            <fieldset class="appearance-field" aria-labelledby="theme-title">
+              <legend class="setting-heading"><span id="theme-title" class="setting-title">번역 결과 색상</span><span id="theme-help" class="setting-description">텍스트와 배경 색상을 함께 선택하세요. 기본은 배경 없이 표시합니다.</span></legend>
               <div id="theme-choices" class="theme-choices" aria-describedby="theme-help"></div>
             </fieldset>
 
@@ -102,8 +158,7 @@
         </details>
 
         <div class="actions">
-          <button id="save-button" class="primary" type="submit">설정 저장</button>
-          <button id="test-button" class="secondary" type="button">연결 테스트</button>
+          <button id="save-button" class="primary" type="submit" disabled>설정 저장</button>
         </div>
 
         <p id="status" class="status" role="status" aria-live="polite"></p>
@@ -111,7 +166,7 @@
 
       <aside class="privacy-note">
         <span class="privacy-label">전송 범위</span>
-        <p><strong>클릭한 메시지 본문만</strong> 설정한 LLM 엔드포인트로 전송합니다. Discord 토큰, 사용자 ID, 채널 ID는 전송하지 않습니다.</p>
+        <p id="privacy-description">WebLLM은 메시지와 작성 내용을 <strong>브라우저 안에서 처리</strong>합니다. API 연결을 선택하면 요청한 메시지, 작성 의도와 선택한 대화 문맥만 해당 서버로 전송합니다. Discord 토큰과 ID는 전송하지 않습니다.</p>
       </aside>
     </main>
 

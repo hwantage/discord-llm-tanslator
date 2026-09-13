@@ -4,13 +4,23 @@ const Shared = require("../shared.js");
 
 const DEFAULT_MODEL = "0xIbra/supergemma4-26b-uncensored-gguf-v2:Q4_K_M";
 
-test("기본 설정은 키 없는 로컬 Ollama OpenAI 호환 API를 사용한다", () => {
+test("기본 실행은 WebLLM이고 Ollama 연결 기본값도 보관한다", () => {
   assert.deepEqual(Shared.DEFAULT_PROVIDER_SETTINGS, {
-    provider: "openai-compatible",
+    provider: "webllm",
+    webllmModelId: Shared.WEBLLM_MODEL_ID,
     endpoint: "http://localhost:11434/v1",
     model: DEFAULT_MODEL,
     apiKey: ""
   });
+  assert.equal(Shared.WEBLLM_MODEL_ID, "Qwen2.5-7B-Instruct-q4f16_1-MLC");
+  assert.deepEqual(Shared.sanitizeProviderSettings(), Shared.DEFAULT_PROVIDER_SETTINGS);
+});
+
+test("WebLLM과 API 사이를 전환해도 저장된 API 프로필은 유지한다", () => {
+  const profile = { provider: "openai-compatible", webllmModelId: "SmolLM2-360M-Instruct-q4f16_1-MLC", endpoint: "https://api.example.com/v1", model: "saved/model", apiKey: "saved-key" };
+  const local = Shared.sanitizeProviderSettings({ ...profile, provider: "webllm" });
+  assert.deepEqual(local, { ...profile, provider: "webllm" });
+  assert.deepEqual(Shared.sanitizeProviderSettings({ ...local, provider: "openai-compatible" }), profile);
 });
 
 test("로컬과 원격 OpenAI 호환 API 주소를 정규화한다", () => {
@@ -92,6 +102,7 @@ test("설정값을 보수적으로 정규화한다", () => {
     {
       provider: "openai-compatible",
       endpoint: "https://api.example.com/v1",
+      webllmModelId: Shared.WEBLLM_MODEL_ID,
       model: DEFAULT_MODEL,
       apiKey: "secret"
     }
@@ -120,6 +131,7 @@ test("기존 Ollama 설정은 OpenAI 호환 /v1 엔드포인트로 마이그레�
     {
       provider: "openai-compatible",
       endpoint: "http://localhost:11434/v1",
+      webllmModelId: Shared.WEBLLM_MODEL_ID,
       model: DEFAULT_MODEL,
       apiKey: ""
     }
@@ -129,6 +141,18 @@ test("기존 Ollama 설정은 OpenAI 호환 /v1 엔드포인트로 마이그레�
 test("문자열 해시는 결정적이며 입력 변화에 반응한다", () => {
   assert.equal(Shared.hashText("hello"), Shared.hashText("hello"));
   assert.notEqual(Shared.hashText("hello"), Shared.hashText("hello!"));
+});
+
+test("추천 칸에 생략 부호만 있거나 영어·한국어가 빠진 결과는 거부한다", () => {
+  const suggestions = [
+    { tone: "natural", en: "Hello there.", ko: "안녕하세요." },
+    { tone: "friendly", en: "Hey, nice to meet you!", ko: "안녕, 만나서 반가워요!" },
+    { tone: "polite", en: "It is a pleasure to meet you.", ko: "만나 뵙게 되어 기쁩니다." }
+  ];
+  for (const invalid of [{ en: "..." }, { en: "안녕하세요" }, { ko: "Hello there." }]) {
+    assert.throws(() => Shared.validateReplySuggestions([{ ...suggestions[0], ...invalid }, ...suggestions.slice(1)]),
+      { code: "INVALID_SUGGESTIONS" });
+  }
 });
 
 test("공백을 줄이되 줄바꿈은 보존한다", () => {

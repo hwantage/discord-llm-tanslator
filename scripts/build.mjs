@@ -1,6 +1,7 @@
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildWebLLM } from "./build-webllm.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDirectory, "..");
@@ -14,6 +15,10 @@ if (!allowedTargets.has(requestedTarget)) {
 const targets = requestedTarget === "all" ? ["chromium", "firefox"] : [requestedTarget];
 const files = ["shared.js", "inline-ui.js", "background.js", "content.js", "composer-dom.js", "composer-ui.js", "composer.js", "PRIVACY.md"];
 
+// Existing unpacked installs point directly at the repository root. Prepare its
+// runtime as well so those installs can keep their extension ID and settings.
+await buildWebLLM(projectRoot, projectRoot);
+
 for (const target of targets) {
   const outputDirectory = path.join(projectRoot, "dist", target);
   await rm(outputDirectory, { recursive: true, force: true });
@@ -25,8 +30,9 @@ for (const target of targets) {
     delete manifest.background.scripts;
     delete manifest.browser_specific_settings;
   } else {
+    manifest.permissions = manifest.permissions.filter((permission) => permission !== "offscreen");
     manifest.background = {
-      scripts: ["shared.js", "background.js"]
+      scripts: ["shared.js", "webllm-provider.js", "background.js"]
     };
     manifest.optional_permissions = manifest.optional_host_permissions || [];
     delete manifest.optional_host_permissions;
@@ -41,6 +47,7 @@ for (const target of targets) {
   for (const file of files) {
     await cp(path.join(projectRoot, file), path.join(outputDirectory, file));
   }
+  await buildWebLLM(projectRoot, outputDirectory);
 
   await cp(path.join(projectRoot, "options"), path.join(outputDirectory, "options"), {
     recursive: true
